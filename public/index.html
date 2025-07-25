@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Opticoms Test Server</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.2em;
+      color: #2c3e50;
+      margin: 10px 0 30px;
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto;
+      height: 60px;
+    }
+
+    .main-wrapper {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .flex-grid {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .test-section {
+      flex: 1;
+      min-width: 300px;
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .test-section h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+      color: #34495e;
+    }
+
+    #server-controls,
+    #basic-server-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    #led, #basic-led {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background-color: red;
+      border: 1px solid #333;
+    }
+
+    form, .form-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      grid-column: span 2;
+      font-weight: bold;
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #log {
+      margin-top: 30px;
+      background-color: #000;
+      color: #00ff00;
+      padding: 20px;
+      font-family: monospace;
+      font-size: 1em;
+      border-radius: 10px;
+      height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .flex-grid {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="Opticoms Logo" class="logo" />
+  <h1>📡 Opticoms Test Server</h1>
+
+  <div class="main-wrapper">
+    <div class="flex-grid">
+      <!-- Advanced Throughput -->
+      <div class="test-section">
+        <h2>🚀 Advanced Throughput Test</h2>
+        <div id="server-controls">
+          <button id="startServerBtn">Start Server</button>
+          <button id="stopServerBtn">Stop Server</button>
+          <span>Server Status:</span>
+          <div id="led"></div>
+        </div>
+
+        <form id="testForm">
+          <label for="serverIP">Server IP:</label>
+          <input type="text" id="serverIP" required>
+
+          <label for="protocol">Protocol:</label>
+          <select id="protocol">
+            <option value="TCP">TCP</option>
+            <option value="UDP">UDP</option>
+          </select>
+
+          <label for="time">Test Duration (sec):</label>
+          <input type="number" id="time">
+
+          <label for="bandwidth">Bandwidth (e.g. 10M):</label>
+          <input type="text" id="bandwidth">
+
+          <label for="mtu">MTU Size:</label>
+          <input type="text" id="mtu">
+
+          <label for="bufferLength">Buffer Length:</label>
+          <input type="text" id="bufferLength">
+
+          <label for="parallel">Parallel Streams:</label>
+          <input type="number" id="parallel">
+
+          <label for="windowSize">TCP Window Size (e.g. 1M):</label>
+          <input type="text" id="windowSize">
+
+          <label>
+            <input type="checkbox" id="reverse"> Reverse direction
+          </label>
+
+          <button type="submit">Run Test</button>
+        </form>
+      </div>
+
+      <!-- Basic Throughput and Latency Test Together -->
+      <div class="test-section">
+        <h2>📦 Basic Throughput Test</h2>
+
+        <div id="basic-server-controls">
+          <button id="startServerBtn2">Start Server</button>
+          <button id="stopServerBtn2">Stop Server</button>
+          <span>Server Status:</span>
+          <div id="basic-led"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="basicServerIP">Server IP:</label>
+          <input type="text" id="basicServerIP">
+          <label>
+            <input type="checkbox" id="basicReverse"> Reverse direction
+          </label>
+        </div>
+
+        <button onclick="runBasicTest('UDP')">Start UDP</button>
+        <button onclick="runBasicTest('TCP')">Start TCP</button>
+
+        <hr />
+
+        <h2>⏱️ Latency Test</h2>
+        <div class="form-group">
+          <label for="pingServerIP">Server IP:</label>
+          <input type="text" id="pingServerIP">
+          <label for="pingDuration">Duration (sec):</label>
+          <input type="number" id="pingDuration" placeholder="e.g. 5">
+        </div>
+        <button onclick="runPingTest()">Start Ping Test</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="log">🔍 Waiting for test results...</div>
+
+  <script>
+    const log = document.getElementById('log');
+    const led = document.getElementById('led');
+    const led2 = document.getElementById('basic-led');
+
+    function logMessage(msg) {
+      log.innerText += '\n' + msg;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function startServer() {
+      logMessage('🟡 Starting server...');
+      try {
+        const res = await fetch('/start-server', { method: 'POST' });
+        const result = await res.json();
+        if (res.ok) {
+          led.style.backgroundColor = 'green';
+          led2.style.backgroundColor = 'green';
+          logMessage('✅ ' + result.message);
+        } else {
+          led.style.backgroundColor = 'red';
+          led2.style.backgroundColor = 'red';
+          logMessage('❌ ' + result.error);
+        }
+      } catch (err) {
+        logMessage('❌ Failed to start server: ' + err.message);
+      }
+    }
+
+    async function stopServer() {
+      logMessage('🔴 Stopping server...');
+      try {
+        const res = await fetch('/stop-server', { method: 'POST' });
+        const result = await res.json();
+        if (res.ok) {
+          led.style.backgroundColor = 'red';
+          led2.style.backgroundColor = 'red';
+          logMessage('🛑 ' + result.message);
+        } else {
+          logMessage('❌ ' + result.error);
+        }
+      } catch (err) {
+        logMessage('❌ Failed to stop server: ' + err.message);
+      }
+    }
+
+    document.getElementById('startServerBtn').addEventListener('click', startServer);
+    document.getElementById('stopServerBtn').addEventListener('click', stopServer);
+    document.getElementById('startServerBtn2').addEventListener('click', startServer);
+    document.getElementById('stopServerBtn2').addEventListener('click', stopServer);
+
+    document.getElementById('testForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      logMessage('🧪 Running Advanced Test...');
+      const body = {
+        serverIP: document.getElementById('serverIP').value,
+        protocol: document.getElementById('protocol').value,
+        time: document.getElementById('time').value,
+        bandwidth: document.getElementById('bandwidth').value,
+        mtu: document.getElementById('mtu').value,
+        bufferLength: document.getElementById('bufferLength').value,
+        parallel: document.getElementById('parallel').value,
+        windowSize: document.getElementById('windowSize').value,
+        reverse: document.getElementById('reverse').checked.toString()
+      };
+
+      try {
+        const res = await fetch('/run-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        if (res.ok && result.raw) {
+          logMessage('✅ Test completed:\n' + result.raw);
+        } else {
+          logMessage('⚠️ Test completed but no output.');
+        }
+      } catch (err) {
+        logMessage('❌ Error: ' + err.message);
+      }
+    });
+
+    async function runBasicTest(type) {
+      const serverIP = document.getElementById('basicServerIP').value;
+      const reverse = document.getElementById('basicReverse').checked.toString();
+
+      if (!serverIP) return logMessage('❌ Server IP is required for basic test.');
+
+      logMessage(`🧪 Running Basic ${type} Test...`);
+      try {
+        const res = await fetch('/run-basic-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serverIP, type, reverse })
+        });
+        const result = await res.json();
+        if (res.ok && result.raw) {
+          logMessage(`✅ ${type} test completed:\n` + result.raw);
+        } else {
+          logMessage('⚠️ Test completed but no output.');
+        }
+      } catch (err) {
+        logMessage('❌ Error: ' + err.message);
+      }
+    }
+
+    async function runPingTest() {
+      const serverIP = document.getElementById('pingServerIP').value;
+      const duration = document.getElementById('pingDuration').value || '5';
+
+      if (!serverIP) return logMessage('❌ Server IP is required for ping test.');
+
+      logMessage('📡 Running Latency Test...');
+      try {
+        const res = await fetch('/run-ping-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serverIP, duration })
+        });
+
+        const result = await res.json();
+        if (res.ok && result.raw) {
+          logMessage(`✅ Ping test completed:\n${result.raw}`);
+        } else {
+          logMessage('⚠️ Ping test completed but no output.');
+        }
+      } catch (err) {
+        logMessage('❌ Error: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
